@@ -111,7 +111,7 @@ func UpdateSong(c *gin.Context) {
 // @Description Delete a song by ID
 // @Produce json
 // @Param id path int true "Song ID"
-// @Success 200 {object} gin.H
+// @Success 200 {object} map[string]interface{}
 // @Router /songs/{id} [delete]
 func DeleteSong(c *gin.Context) {
     id := c.Param("id")
@@ -122,5 +122,5 @@ func DeleteSong(c *gin.Context) {
         return
     }
     log.Printf("INFO: Deleted song with ID %s", id)
-    c.JSON(http.StatusOK, gin.H{"id #" + id: "deleted"})
+    c.JSON(http.StatusOK, map[string]interface{}{"id #" + id: "deleted"})
 }
