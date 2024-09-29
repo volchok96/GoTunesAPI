@@ -34,11 +34,11 @@ func CreateSong(newSong NewSongRequest) (*models.Song, error) {
 }
 
 func GetSongDetail(group string, song string) (*models.SongDetail, error) {
-    url := fmt.Sprintf("https://external.api/info?group=%s&song=%s", group, song)
+    url := fmt.Sprintf("http://localhost:8080/songs?group=%s&song=%s", group, song)
 
     resp, err := http.Get(url)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("failed to connect to external API: %w", err)
     }
     defer resp.Body.Close()
 
@@ -46,10 +46,14 @@ func GetSongDetail(group string, song string) (*models.SongDetail, error) {
         return nil, fmt.Errorf("failed to fetch song details: %s", resp.Status)
     }
 
-    var songDetail models.SongDetail
-    if err := json.NewDecoder(resp.Body).Decode(&songDetail); err != nil {
-        return nil, err
+    var songDetails []models.SongDetail // Задаем массив, если API возвращает массив объектов
+    if err := json.NewDecoder(resp.Body).Decode(&songDetails); err != nil {
+        return nil, fmt.Errorf("failed to decode response: %w", err)
     }
 
-    return &songDetail, nil
+    if len(songDetails) == 0 {
+        return nil, fmt.Errorf("no song details found")
+    }
+
+    return &songDetails[0], nil // Возвращаем первый элемент из массива
 }
