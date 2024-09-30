@@ -10,5 +10,5 @@ run:
 # Доработка Swagger докуметации
 
 swag-generate:
-	cd cmd && swag init -g ../cmd/main.go -d ../config,../models,../controllers,../database,../repository,../services -o ../docs
+	cd cmd && swag init -g ../cmd/main.go -d ../config,../models,../controllers,../database,../repository -o ../docs
 

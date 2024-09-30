@@ -8,7 +8,6 @@ import (
     "go-tunes/database"
     _ "go-tunes/docs"
     "github.com/swaggo/gin-swagger"
-    "github.com/gin-contrib/cors"
     "github.com/swaggo/files"
     "net/http"
 )
@@ -26,16 +25,15 @@ func main() {
 
     // Основной сервер на порту 8080
     router := gin.Default()
-    router.Use(cors.New(cors.Config{
-        AllowAllOrigins: true, // Разрешает все источники (для тестирования, не рекомендуется в продакшене)
-        AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
-        AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
-    }))
+    // router.Use(cors.New(cors.Config{
+    //     AllowAllOrigins: true, // Разрешает все источники (для тестирования, не рекомендуется в продакшене)
+    //     AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
+    //     AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
+    // }))
 
     router.GET("/info", controllers.GetSongInfo)
     router.GET("/songs", controllers.GetSongs)
     router.GET("/songs/:id", controllers.GetSongText)
-    router.POST("/songs", controllers.AddSong)
     router.PUT("/songs/:id", controllers.UpdateSong)
     router.DELETE("/songs/:id", controllers.DeleteSong)
 

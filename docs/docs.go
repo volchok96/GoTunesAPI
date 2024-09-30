@@ -84,47 +84,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Add a new song to the library",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Add a new song",
-                "parameters": [
-                    {
-                        "description": "Song data",
-                        "name": "song",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.NewSongRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Song"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid input",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
             }
         },
         "/songs/{id}": {
@@ -252,21 +211,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.NewSongRequest": {
-            "type": "object",
-            "required": [
-                "group",
-                "song"
-            ],
-            "properties": {
-                "group": {
-                    "type": "string"
-                },
-                "song": {
-                    "type": "string"
-                }
-            }
-        },
         "models.Song": {
             "type": "object",
             "properties": {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go-tunes/database"
 	"go-tunes/models"
-	"go-tunes/services"
 	"io"
 	"log"
 	"net/http"
@@ -198,61 +197,6 @@ func GetSongText(c *gin.Context) {
 	}
 	log.Printf("INFO: Retrieved text for song ID %s", id)
 	c.JSON(http.StatusOK, song.Text)
-}
-
-// AddSong handles adding a new song
-// @Summary Add a new song
-// @Description Add a new song to the library
-// @Accept json
-// @Produce json
-// @Param song body models.NewSongRequest true "Song data"
-// @Success 200 {object} models.Song
-// @Failure 400 {object} string "invalid input"
-// @Failure 500 {object} string "internal server error"
-// @Router /songs [post]
-func AddSong(c *gin.Context) {
-	// 1. Parse the incoming JSON to get the group and song names
-	var newSongRequest models.NewSongRequest
-	if err := c.ShouldBindJSON(&newSongRequest); err != nil {
-		log.Printf("ERROR: Invalid song data: %v", err)
-		c.String(http.StatusBadRequest, "invalid input")
-		return
-	}
-
-	// 2. Fetch song details from the external API
-	songDetail, shouldReturn := newFunction(newSongRequest, c)
-	if shouldReturn {
-		return
-	}
-
-	// 3. Enrich the song data
-	song := models.Song{
-		Group:       newSongRequest.Group,
-		Song:        newSongRequest.Song,
-		ReleaseDate: songDetail.ReleaseDate,
-		Text:        songDetail.Text,
-		Link:        songDetail.Link,
-	}
-
-	// 4. Save enriched song data to the database
-	db := database.Connect()
-	if err := db.Create(&song).Error; err != nil {
-		log.Printf("ERROR: Failed to add new song: %v", err)
-		c.String(http.StatusInternalServerError, "internal server error")
-		return
-	}
-	log.Printf("INFO: Added new song: %v", song)
-	c.JSON(http.StatusOK, song)
-}
-
-func newFunction(newSongRequest models.NewSongRequest, c *gin.Context) (services.SongDetail, bool) {
-	songDetail, err := services.GetSongDetail(newSongRequest.Group, newSongRequest.Song)
-	if err != nil {
-		log.Printf("ERROR: Failed to get song detail for group '%s' and song '%s': %v", newSongRequest.Group, newSongRequest.Song, err)
-		c.String(http.StatusInternalServerError, "internal server error")
-		return services.SongDetail{}, true
-	}
-	return songDetail, false
 }
 
 // UpdateSong updates an existing song
