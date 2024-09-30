@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -135,32 +136,32 @@ func GetSongDetailFromAPI(group, song string, c *gin.Context) (models.SongDetail
 
 // GetSongDetailFromJSON читает данные о песне из JSON-файла
 func GetSongDetailFromJSON(group, song string) (models.SongDetail, error) {
-    jsonFile, err := os.Open("song_enrichment.json")
-    if err != nil {
-        log.Printf("ERROR: Could not open JSON file: %v", err)
-        return models.SongDetail{}, fmt.Errorf("could not open JSON file")
-    }
-    defer jsonFile.Close()
+	jsonFile, err := os.Open("song_enrichment.json")
+	if err != nil {
+		log.Printf("ERROR: Could not open JSON file: %v", err)
+		return models.SongDetail{}, fmt.Errorf("could not open JSON file")
+	}
+	defer jsonFile.Close()
 
-    byteValue, _ := io.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 
-    // Парсинг JSON в структуру
+	// Парсинг JSON в структуру
 	var enrichmentData SongEnrichment
 
 	if err := json.Unmarshal(byteValue, &enrichmentData); err != nil {
-        log.Printf("ERROR: Could not parse JSON file: %v", err)
-        return models.SongDetail{}, fmt.Errorf("could not parse JSON file")
-    }
-	
-    if enrichmentData.Group == group && enrichmentData.Song == song {
+		log.Printf("ERROR: Could not parse JSON file: %v", err)
+		return models.SongDetail{}, fmt.Errorf("could not parse JSON file")
+	}
+
+	if enrichmentData.Group == group && enrichmentData.Song == song {
 		return models.SongDetail{
 			ReleaseDate: enrichmentData.ReleaseDate,
 			Text:        enrichmentData.Text,
 			Link:        enrichmentData.Link,
 		}, nil
 	}
-	
-    return models.SongDetail{}, fmt.Errorf("song not found")
+
+	return models.SongDetail{}, fmt.Errorf("song not found")
 }
 
 // enrichSongFromJSON обогащает данные песни из локального JSON-файла
@@ -192,18 +193,74 @@ func enrichSongFromJSON(songDetail *models.SongDetail, group, song string) {
 // @Summary Get all songs
 // @Description Retrieve all songs with optional filtering and pagination
 // @Produce json
+// @Param group query string false "Group"
+// @Param song query string false "Song"
+// @Param release_date query string false "Release Date"
+// @Param text query string false "Text"
+// @Param link query string false "Link"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Results per page" default(10)
 // @Success 200 {array} models.Song
 // @Failure 500 {string} string "internal server error"
 // @Router /songs [get]
 func GetSongs(c *gin.Context) {
-	var songs []models.Song
 	db := database.Connect()
-	if err := db.Find(&songs).Error; err != nil {
+	var songs []models.Song
+
+	// Получение параметров фильтрации
+	group := c.Query("group")
+	song := c.Query("song")
+	releaseDate := c.Query("release_date")
+	text := c.Query("text")
+	link := c.Query("link")
+
+	// Получение параметров пагинации
+	page := c.DefaultQuery("page", "1")
+	limit := c.DefaultQuery("limit", "10")
+
+	// Преобразование значений параметров пагинации в int
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil || pageNumber < 1 {
+		pageNumber = 1
+	}
+
+	limitNumber, err := strconv.Atoi(limit)
+	if err != nil || limitNumber < 1 {
+		limitNumber = 10
+	}
+
+	// Построение запроса с учетом фильтров
+	query := db.Model(&models.Song{})
+
+	if group != "" {
+		query = query.Where("\"group\" ILIKE ?", "%"+group+"%")
+	}
+	if song != "" {
+		query = query.Where("song ILIKE ?", "%"+song+"%")
+	}
+	if releaseDate != "" {
+		query = query.Where("release_date = ?", releaseDate)
+	}
+	if text != "" {
+		query = query.Where("text ILIKE ?", "%"+text+"%")
+	}
+	if link != "" {
+		query = query.Where("link ILIKE ?", "%"+link+"%")
+	}
+
+	// Пагинация
+	offset := (pageNumber - 1) * limitNumber
+	query = query.Offset(offset).Limit(limitNumber)
+
+	// Выполнение запроса
+	if err := query.Find(&songs).Error; err != nil {
 		log.Printf("ERROR: Failed to retrieve songs: %v", err)
 		c.String(http.StatusInternalServerError, "internal server error")
 		return
 	}
-	log.Println("INFO: Retrieved songs")
+
+	// Возвращение результатов
+	log.Println("INFO: Retrieved songs with filtering and pagination")
 	c.JSON(http.StatusOK, songs)
 }
 
