@@ -19,56 +19,60 @@ import (
 // @BasePath /
 
 func main() {
+    // Загрузка переменных окружения
     config.LoadEnv()
+
+    // Подключение к базе данных и выполнение миграций
     db := database.Connect()
     database.Migrate(db)
 
     // Основной сервер на порту 8080
     router := gin.Default()
-    // router.Use(cors.New(cors.Config{
-    //     AllowAllOrigins: true, // Разрешает все источники (для тестирования, не рекомендуется в продакшене)
-    //     AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
-    //     AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
-    // }))
 
-    router.GET("/info", controllers.GetSongInfo)
-    router.GET("/songs", controllers.GetSongs)
-    router.GET("/songs/:id", controllers.GetSongText)
-    router.PUT("/songs/:id", controllers.UpdateSong)
-    router.DELETE("/songs/:id", controllers.DeleteSong)
+    // Определение маршрутов для основного API
+    router.GET("/info", controllers.GetSongInfo)       // Информация о песне
+    router.GET("/songs", controllers.GetSongs)         // Список песен
+    router.GET("/songs/:id", controllers.GetSongText)  // Текст песни по ID
+    router.PUT("/songs/:id", controllers.UpdateSong)   // Обновление песни по ID
+    router.DELETE("/songs/:id", controllers.DeleteSong) // Удаление песни по ID
 
-    // Swagger
+    // Swagger для документации
     router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-    // Второй сервер на порту 8081
-    go func() {
-        testRouter := gin.Default()
-        testRouter.GET("/info", func(c *gin.Context) {
-            group := c.Query("group")
-            song := c.Query("song")
-
-            // Возвращаем фиктивные данные для тестирования
-            if group != "" && song != "" {
-                c.JSON(http.StatusOK, gin.H{
-                    "group":        group,
-                    "song":         song,
-                    "release_date": "2024-01-01",
-                    "text":         "This is a sample song text.",
-                    "link":         "http://example.com/song",
-                })
-            } else {
-                c.JSON(http.StatusBadRequest, gin.H{
-                    "error": "missing parameters",
-                })
-            }
-        })
-
-        // Запускаем сервер на порту 8081
-        if err := testRouter.Run(":8081"); err != nil {
-            log.Fatalf("Ошибка при запуске тестового сервера: %v", err)
-        }
-    }()
+    // Второй сервер на порту 8081 - Эмуляция внешнего API
+    go startMockServer()
 
     // Запускаем основной сервер на порту 8080
     log.Fatal(router.Run(":8080"))
+}
+
+// startMockServer запускает тестовый сервер на порту 8081 для эмуляции внешнего API
+func startMockServer() {
+    testRouter := gin.Default()
+
+    // Определяем маршрут для эмуляции внешнего API
+    testRouter.GET("/info", func(c *gin.Context) {
+        group := c.Query("group")
+        song := c.Query("song")
+
+        // Проверка параметров запроса
+        if group == "" || song == "" {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "missing parameters"})
+            return
+        }
+
+        // Используем отдельную функцию для получения данных из JSON без необходимости использования *gin.Context
+        songDetail, err := controllers.GetSongDetailFromJSON(group, song)
+        if err != nil {
+            c.JSON(http.StatusNotFound, gin.H{"error": "song not found"})
+            return
+        }
+
+        c.JSON(http.StatusOK, songDetail)
+    })
+
+    // Запускаем сервер на порту 8081
+    if err := testRouter.Run(":8081"); err != nil {
+        log.Fatalf("Ошибка при запуске тестового сервера: %v", err)
+    }
 }

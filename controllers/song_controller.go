@@ -59,7 +59,7 @@ func GetSongInfo(c *gin.Context) {
 		log.Printf("INFO: Song with group '%s' and song '%s' not found in database. Attempting to add it.", group, song)
 
 		// Если песни нет в базе данных, попробуем добавить её, используя внешний API
-		songDetail, shouldReturn := getSongDetailFromAPI(group, song, c)
+		songDetail, shouldReturn := GetSongDetailFromAPI(group, song, c)
 		if shouldReturn {
 			return
 		}
@@ -98,7 +98,7 @@ func GetSongInfo(c *gin.Context) {
 }
 
 // getSongDetailFromAPI выполняет запрос к внешнему API для получения данных о песне
-func getSongDetailFromAPI(group, song string, c *gin.Context) (models.SongDetail, bool) {
+func GetSongDetailFromAPI(group, song string, c *gin.Context) (models.SongDetail, bool) {
 	encodedGroup := url.QueryEscape(group)
 	encodedSong := url.QueryEscape(song)
 	apiURL := fmt.Sprintf("http://localhost:8081/info?group=%s&song=%s", encodedGroup, encodedSong)
@@ -131,6 +131,36 @@ func getSongDetailFromAPI(group, song string, c *gin.Context) (models.SongDetail
 	}
 
 	return apiData, false
+}
+
+// GetSongDetailFromJSON читает данные о песне из JSON-файла
+func GetSongDetailFromJSON(group, song string) (models.SongDetail, error) {
+    jsonFile, err := os.Open("song_enrichment.json")
+    if err != nil {
+        log.Printf("ERROR: Could not open JSON file: %v", err)
+        return models.SongDetail{}, fmt.Errorf("could not open JSON file")
+    }
+    defer jsonFile.Close()
+
+    byteValue, _ := io.ReadAll(jsonFile)
+
+    // Парсинг JSON в структуру
+	var enrichmentData SongEnrichment
+
+	if err := json.Unmarshal(byteValue, &enrichmentData); err != nil {
+        log.Printf("ERROR: Could not parse JSON file: %v", err)
+        return models.SongDetail{}, fmt.Errorf("could not parse JSON file")
+    }
+	
+    if enrichmentData.Group == group && enrichmentData.Song == song {
+		return models.SongDetail{
+			ReleaseDate: enrichmentData.ReleaseDate,
+			Text:        enrichmentData.Text,
+			Link:        enrichmentData.Link,
+		}, nil
+	}
+	
+    return models.SongDetail{}, fmt.Errorf("song not found")
 }
 
 // enrichSongFromJSON обогащает данные песни из локального JSON-файла
