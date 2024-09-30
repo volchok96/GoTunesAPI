@@ -2,25 +2,30 @@ package models
 
 import (
     "time"
-    // "gorm.io/gorm"
 )
 
-// Song represents a song in the database
+// Song представляет песню в базе данных
 type Song struct {
-    ID          uint           `gorm:"primaryKey" json:"id"`
-    CreatedAt   time.Time      `json:"created_at"`
-    UpdatedAt   time.Time      `json:"updated_at"`
-    DeletedAt   time.Time `gorm:"index" json:"deleted_at,omitempty"`
-    Group       string         `json:"group"`
-    Name        string         `json:"name"`
-    ReleaseDate string         `json:"release_date"`
-    Text        string         `json:"text"`
-    Link        string         `json:"link"`
+    ID          uint      `gorm:"primaryKey" json:"id"`
+    CreatedAt   time.Time `json:"created_at"`
+    UpdatedAt   time.Time `json:"updated_at"`
+    DeletedAt   *time.Time `gorm:"index" json:"deleted_at,omitempty"` 
+    Group   string    `json:"group"`      
+    Song    string    `json:"song"`       
+    ReleaseDate string    `json:"release_date"`
+    Text        string    `json:"text"`
+    Link        string    `json:"link"`
 }
 
-// SongDetail represents detailed information about a song
+// SongDetail представляет детальную информацию о песне
 type SongDetail struct {
-    ReleaseDate string `json:"releaseDate"`
+    ReleaseDate string `json:"release_date"`
     Text        string `json:"text"`
     Link        string `json:"link"`
+}
+
+// NewSongRequest используется при добавлении новой песни
+type NewSongRequest struct {
+    Group string `json:"group" binding:"required"` 
+    Song  string `json:"song" binding:"required"`  
 }

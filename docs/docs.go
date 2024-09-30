@@ -15,9 +15,54 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/info": {
+            "get": {
+                "description": "Retrieve detailed information about a song, add to database if not present",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get song details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group",
+                        "name": "group",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Song",
+                        "name": "song",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SongDetail"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/songs": {
             "get": {
-                "description": "Get all songs with filtering and pagination",
+                "description": "Retrieve all songs with optional filtering and pagination",
                 "produces": [
                     "application/json"
                 ],
@@ -31,11 +76,17 @@ const docTemplate = `{
                                 "$ref": "#/definitions/models.Song"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
             "post": {
-                "description": "Add a new song",
+                "description": "Add a new song to the library",
                 "consumes": [
                     "application/json"
                 ],
@@ -50,7 +101,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/services.NewSongRequest"
+                            "$ref": "#/definitions/models.NewSongRequest"
                         }
                     }
                 ],
@@ -60,13 +111,25 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Song"
                         }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "/songs/{id}": {
             "get": {
-                "description": "Get a song by ID",
+                "description": "Retrieve the text of a song by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -82,15 +145,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Text of the song",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "put": {
-                "description": "Update an existing song",
+                "description": "Update an existing song by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -107,7 +182,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Song data",
+                        "description": "Updated song data",
                         "name": "song",
                         "in": "body",
                         "required": true,
@@ -122,11 +197,23 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Song"
                         }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a song by ID",
+                "description": "Delete a song by its ID",
                 "produces": [
                     "application/json"
                 ],
@@ -147,12 +234,39 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "models.NewSongRequest": {
+            "type": "object",
+            "required": [
+                "group",
+                "song"
+            ],
+            "properties": {
+                "group": {
+                    "type": "string"
+                },
+                "song": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Song": {
             "type": "object",
             "properties": {
@@ -171,10 +285,10 @@ const docTemplate = `{
                 "link": {
                     "type": "string"
                 },
-                "name": {
+                "release_date": {
                     "type": "string"
                 },
-                "release_date": {
+                "song": {
                     "type": "string"
                 },
                 "text": {
@@ -185,17 +299,16 @@ const docTemplate = `{
                 }
             }
         },
-        "services.NewSongRequest": {
+        "models.SongDetail": {
             "type": "object",
-            "required": [
-                "group",
-                "song"
-            ],
             "properties": {
-                "group": {
+                "link": {
                     "type": "string"
                 },
-                "song": {
+                "release_date": {
+                    "type": "string"
+                },
+                "text": {
                     "type": "string"
                 }
             }

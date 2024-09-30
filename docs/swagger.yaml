@@ -1,5 +1,15 @@
 basePath: /
 definitions:
+  models.NewSongRequest:
+    properties:
+      group:
+        type: string
+      song:
+        type: string
+    required:
+    - group
+    - song
+    type: object
   models.Song:
     properties:
       created_at:
@@ -12,24 +22,23 @@ definitions:
         type: integer
       link:
         type: string
-      name:
-        type: string
       release_date:
+        type: string
+      song:
         type: string
       text:
         type: string
       updated_at:
         type: string
     type: object
-  services.NewSongRequest:
+  models.SongDetail:
     properties:
-      group:
+      link:
         type: string
-      song:
+      release_date:
         type: string
-    required:
-    - group
-    - song
+      text:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -38,9 +47,40 @@ info:
   title: Music Library API
   version: "1.0"
 paths:
+  /info:
+    get:
+      description: Retrieve detailed information about a song, add to database if
+        not present
+      parameters:
+      - description: Group
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: Song
+        in: query
+        name: song
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SongDetail'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Get song details
   /songs:
     get:
-      description: Get all songs with filtering and pagination
+      description: Retrieve all songs with optional filtering and pagination
       produces:
       - application/json
       responses:
@@ -50,18 +90,22 @@ paths:
             items:
               $ref: '#/definitions/models.Song'
             type: array
+        "500":
+          description: internal server error
+          schema:
+            type: string
       summary: Get all songs
     post:
       consumes:
       - application/json
-      description: Add a new song
+      description: Add a new song to the library
       parameters:
       - description: Song data
         in: body
         name: song
         required: true
         schema:
-          $ref: '#/definitions/services.NewSongRequest'
+          $ref: '#/definitions/models.NewSongRequest'
       produces:
       - application/json
       responses:
@@ -69,10 +113,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Song'
+        "400":
+          description: invalid input
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
       summary: Add a new song
   /songs/{id}:
     delete:
-      description: Delete a song by ID
+      description: Delete a song by its ID
       parameters:
       - description: Song ID
         in: path
@@ -87,9 +139,17 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
       summary: Delete a song
     get:
-      description: Get a song by ID
+      description: Retrieve the text of a song by its ID
       parameters:
       - description: Song ID
         in: path
@@ -100,21 +160,29 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Text of the song
           schema:
-            $ref: '#/definitions/models.Song'
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
       summary: Get a song by ID
     put:
       consumes:
       - application/json
-      description: Update an existing song
+      description: Update an existing song by its ID
       parameters:
       - description: Song ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Song data
+      - description: Updated song data
         in: body
         name: song
         required: true
@@ -127,5 +195,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Song'
+        "400":
+          description: invalid input
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
       summary: Update a song
 swagger: "2.0"
