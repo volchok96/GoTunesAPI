@@ -71,6 +71,37 @@ paths:
   /songs:
     get:
       description: Retrieve all songs with optional filtering and pagination
+      parameters:
+      - description: Group
+        in: query
+        name: group
+        type: string
+      - description: Song
+        in: query
+        name: song
+        type: string
+      - description: Release Date
+        in: query
+        name: release_date
+        type: string
+      - description: Text
+        in: query
+        name: text
+        type: string
+      - description: Link
+        in: query
+        name: link
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Results per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -111,30 +142,6 @@ paths:
           schema:
             type: string
       summary: Delete a song
-    get:
-      description: Retrieve the text of a song by its ID
-      parameters:
-      - description: Song ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Text of the song
-          schema:
-            type: string
-        "404":
-          description: not found
-          schema:
-            type: string
-        "500":
-          description: internal server error
-          schema:
-            type: string
-      summary: Get a song by ID
     put:
       consumes:
       - application/json
@@ -167,4 +174,40 @@ paths:
           schema:
             type: string
       summary: Update a song
+  /songs/{id}/verses:
+    get:
+      description: Retrieve the text of a song by its ID with pagination by verses
+      parameters:
+      - description: Song ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 1
+        description: Verses per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Get a song by ID with pagination
 swagger: "2.0"
