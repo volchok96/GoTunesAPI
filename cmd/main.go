@@ -32,7 +32,7 @@ func main() {
     // Определение маршрутов для основного API
     router.GET("/info", controllers.GetSongInfo)       // Информация о песне
     router.GET("/songs", controllers.GetSongs)         // Список песен
-    router.GET("/songs/:id", controllers.GetSongText)  // Текст песни по ID
+    router.GET("/songs/:id/verses", controllers.GetSongTextWithPagination)  // Текст песни по ID
     router.PUT("/songs/:id", controllers.UpdateSong)   // Обновление песни по ID
     router.DELETE("/songs/:id", controllers.DeleteSong) // Удаление песни по ID
 

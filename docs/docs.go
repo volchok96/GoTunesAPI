@@ -133,42 +133,6 @@ const docTemplate = `{
             }
         },
         "/songs/{id}": {
-            "get": {
-                "description": "Retrieve the text of a song by its ID",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Get a song by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Song ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Text of the song",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
             "put": {
                 "description": "Update an existing song by its ID",
                 "consumes": [
@@ -230,6 +194,59 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/songs/{id}/verses": {
+            "get": {
+                "description": "Retrieve the text of a song by its ID with pagination by verses",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get a song by ID with pagination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Song ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Verses per page",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {

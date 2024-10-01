@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,13 +47,6 @@ func GetSongInfo(c *gin.Context) {
 
 	// Подключаемся к базе данных
 	db := database.Connect()
-	_, err := db.DB() // Получение объекта *sql.DB для дальнейшего закрытия
-	if err != nil {
-		log.Printf("ERROR: Failed to get sql.DB from gorm.DB: %v", err)
-		c.String(http.StatusInternalServerError, "internal server error")
-		return
-	}
-	//defer sqlDB.Close() // Закрытие соединения после выполнения
 
 	// Ищем песню в базе данных
 	var songRecord models.Song
@@ -264,26 +258,89 @@ func GetSongs(c *gin.Context) {
 	c.JSON(http.StatusOK, songs)
 }
 
-// GetSongText retrieves the text of a song with pagination by verses
-// @Summary Get a song by ID
-// @Description Retrieve the text of a song by its ID
+// GetSongTextWithPagination retrieves the text of a song with pagination by verses
+// @Summary Get a song by ID with pagination
+// @Description Retrieve the text of a song by its ID with pagination by verses
 // @Produce json
 // @Param id path int true "Song ID"
-// @Success 200 {string} string "Text of the song"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Verses per page" default(1)
+// @Success 200 {object} map[string]interface{}
 // @Failure 404 {string} string "not found"
 // @Failure 500 {string} string "internal server error"
-// @Router /songs/{id} [get]
-func GetSongText(c *gin.Context) {
-	id := c.Param("id")
-	var song models.Song
+// @Router /songs/{id}/verses [get]
+func GetSongTextWithPagination(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Printf("ERROR: Invalid song ID %s", c.Param("id"))
+		c.String(http.StatusBadRequest, "invalid song id")
+		return
+	}
+	// Подключение к базе данных
 	db := database.Connect()
-	if err := db.First(&song, id).Error; err != nil {
-		log.Printf("ERROR: Song with ID %s not found", id)
+
+	// Поиск песни по ID
+	var song models.Song
+	if err := db.Unscoped().First(&song, id).Error; err != nil {
+		log.Printf("ERROR: Song with ID %d not found", id)
 		c.String(http.StatusNotFound, "not found")
 		return
 	}
-	log.Printf("INFO: Retrieved text for song ID %s", id)
-	c.JSON(http.StatusOK, song.Text)
+
+	// Получение параметров пагинации
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "1"))
+	if err != nil || limit < 1 {
+		limit = 1
+	}
+
+	// Разделение текста песни на куплеты (предполагается, что куплеты разделены "\n\n")
+	verses := strings.Split(song.Text, "\n\n")
+
+	// Подсчет общего количества куплетов
+	totalVerses := len(verses)
+	if totalVerses == 0 {
+		log.Printf("ERROR: No verses found for song with ID %d", id)
+		c.String(http.StatusNotFound, "not found")
+		return
+	}
+
+	// Определение начального и конечного индекса для пагинации
+	startIndex := (page - 1) * limit
+	endIndex := startIndex + limit
+
+	// Проверка, что стартовый индекс находится в пределах доступного диапазона
+	if startIndex >= totalVerses {
+		log.Printf("ERROR: Page %d out of range for song ID %d", page, id)
+		c.String(http.StatusNotFound, "no verses found for the requested page")
+		return
+	}
+
+	// Ограничение конечного индекса до общего количества куплетов
+	if endIndex > totalVerses {
+		endIndex = totalVerses
+	}
+
+	// Извлечение нужных куплетов
+	selectedVerses := verses[startIndex:endIndex]
+
+	// Формирование ответа
+	response := map[string]interface{}{
+		"song_id":   id,
+		"page":      page,
+		"limit":     limit,
+		"total":     totalVerses,
+		"verses":    selectedVerses,
+		"total_pages": (totalVerses + limit - 1) / limit, // Подсчет общего количества страниц
+	}
+
+	// Логирование и отправка ответа
+	log.Printf("INFO: Retrieved verses for song ID %d, page %d", id, page)
+	c.JSON(http.StatusOK, response)
 }
 
 // UpdateSong updates an existing song
