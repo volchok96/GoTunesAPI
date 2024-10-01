@@ -9,6 +9,6 @@ import (
 func Migrate(db *gorm.DB) {
     err := db.AutoMigrate(&models.Song{})
     if err != nil {
-        log.Fatal("Миграция не удалась: ", err)
+        log.Fatal("Migration failed: ", err)
     }
 }
